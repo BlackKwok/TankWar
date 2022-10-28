@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.File;
 import java.util.Random;
 import java.util.Vector;
 
@@ -17,29 +18,68 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
     Hero hero = null;
     Vector<Enemy> enemyTank = new Vector<>();
     Vector<Bomb> bombs = new Vector<>();
+    Vector<Node_> nodes = new Vector<>();
     int enemyTankSize = 3;
     Image image1 = null;
     Image image2 = null;
     Image image3 = null;
 
-    public MyPanel() {
+    public MyPanel(String key) {
+        File file = new File(Recorder.getRecordFile());
+        if (file.exists()) {
+            nodes = Recorder.getNodesAndEnemyTankRec();
+        }else{
+            System.out.println("文件不存在，开启新游戏");
+            key = "1";
+        }
         hero = new Hero(310, 500); //初始化自己的坦克
-        for (int i = 0; i < enemyTankSize; i++) {
-            Enemy enemy = new Enemy(10 + 300 * i, 10);
-            enemy.setDirect(2);
-            new Thread(enemy).start();
-            enemyTank.add(enemy);
+        switch(key) {
+            case "1":
+                for (int i = 0; i < enemyTankSize; i++) {
+                    Enemy enemy = new Enemy(10 + 300 * i, 10);
+                    enemy.setEnemyTank(enemyTank);
+                    enemy.setDirect(2);
+                    enemy.setSpeed(6);
+                    new Thread(enemy).start();
+                    enemyTank.add(enemy);
+                }
+                break;
+            case "2":
+                for (int i = 0; i < nodes.size(); i++) {
+                    Node_ node_ = nodes.get(i);
+                    Enemy enemy = new Enemy(node_.getX(),node_.getY());
+                    enemy.setEnemyTank(enemyTank);
+                    enemy.setDirect(node_.getDirect());
+                    enemy.setSpeed(6);
+                    new Thread(enemy).start();
+                    enemyTank.add(enemy);
+                }
+                break;
+            default:
+                System.out.println("输入有误...");
+                break;
         }
         hero.setSpeed(10);
         image1 = Toolkit.getDefaultToolkit().getImage(Panel.class.getResource("/bomb1.png"));
         image2 = Toolkit.getDefaultToolkit().getImage(Panel.class.getResource("/bomb2.png"));
         image3 = Toolkit.getDefaultToolkit().getImage(Panel.class.getResource("/bomb3.png"));
     }
+    public void showInfo(Graphics g) {
+        g.setColor(Color.BLACK);
+        Font font = new Font("宋体",Font.BOLD, 25);
+        g.setFont(font);
+        g.drawString("您累计击毁敌方坦克：",1020,30);
+        drawTank(1020,60,g,0,0); //画出一个敌方坦克
+        g.setColor(Color.BLACK);
+        g.drawString(Recorder.getAllEnemyTanNum()+"",1080,100);
+    }
 
     @Override
     public void paint(Graphics g) {
         super.paint(g);
+        Recorder.setEnemys(enemyTank);
         g.fillRect(0, 0, 1000, 750); //填充矩形，默认黑色
+        showInfo(g);
         if (hero != null && hero.isAlive) {
             drawTank(hero.getX(), hero.getY(), g, hero.getDirect(), 1);
         }
@@ -146,6 +186,9 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
                         && s.getY() > enemy.getY() && s.getY() < enemy.getY() + 60) {
                     s.setAlive(false);
                     enemy.isAlive = false;
+                    if (enemy instanceof Enemy) {
+                        Recorder.addAllEnemyTanNum();
+                    }
                     Bomb bomb = new Bomb(enemy.getX(), enemy.getY());
                     bombs.add(bomb);
                     enemyTank.remove(enemy);
@@ -157,6 +200,9 @@ public class MyPanel extends JPanel implements KeyListener, Runnable {
                         && s.getY() > enemy.getY() && s.getY() < enemy.getY() + 40) {
                     s.setAlive(false);
                     enemy.isAlive = false;
+                    if (enemy instanceof Enemy) {
+                        Recorder.addAllEnemyTanNum();
+                    }
                     Bomb bomb = new Bomb(enemy.getX(), enemy.getY());
                     bombs.add(bomb);
                     enemyTank.remove(enemy);
