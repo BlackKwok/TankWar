@@ -5,5 +5,5 @@ package tankgame;
  * @version 1.0
  **/
 public class OldGame {
-qaq
+
 }
